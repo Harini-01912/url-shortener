@@ -1,6 +1,4 @@
-
 const express = require('express');
-app.set("trust proxy", 1);
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -11,21 +9,31 @@ const pool = require("./config/db");
 const urlRoutes = require("./routes/urlRoutes");
 const authRoutes = require("./routes/authRoutes");
 const urlController = require("./controllers/urlController");
-const { apiLimiter, authLimiter } = require("./middlewares/rateLimitMiddleware");
+const {
+    apiLimiter,
+    authLimiter
+} = require("./middlewares/rateLimitMiddleware");
 
 const app = express();
 
+// Render runs behind a reverse proxy
+app.set("trust proxy", 1);
+
+// Middleware
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+// Serve frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Apply general rate limiting to API traffic, while keeping login/register attempts protected separately.
+// Rate limiting
 app.use("/api/v1/auth/register", authLimiter);
 app.use("/api/v1/auth/login", authLimiter);
 app.use(apiLimiter);
 
+// Home page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
@@ -46,22 +54,20 @@ app.get("/db-health", async (req, res) => {
     try {
         const result = await pool.query("SELECT NOW()");
 
-        res.json({
+        res.status(200).json({
             status: "Database Connected",
             time: result.rows[0].now
         });
 
     } catch (err) {
-
         res.status(500).json({
             status: "Database Connection Failed",
             error: err.message
         });
-
     }
 });
 
-// Redirect Endpoint
+// Redirect short URL
 app.get(
     "/:shortCode",
     urlController.redirectToOriginalUrl
