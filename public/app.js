@@ -1,3 +1,6 @@
+const app = express();
+
+app.set("trust proxy", 1);
 const authView = document.getElementById('authView');
 const dashboardView = document.getElementById('dashboardView');
 const authForm = document.getElementById('authForm');
